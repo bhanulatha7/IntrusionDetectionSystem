@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intrusion Detection Client</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+
+<h1>Intrusion Detection Client</h1>
+
+<button id="startCaptureBtn">Start Packet Capture</button>
+<button id="stopCaptureBtn">Stop Packet Capture</button>
+<button id="sendSuspiciousPacketBtn">Send Suspicious Packet</button>
+
+<hr>
+
+<h2>Monitored Data</h2>
+<pre id="monitoredData"></pre>
+
+<h2>Detected Intrusions</h2>
+<div id="detectedIntrusions"></div>
+<style>
+    body {
+        background:black;
+        color:limegreen;
+    }
+    button {
+        background:black;
+        color:limegreen;
+        border:2px solid limegreen;
+        padding:8px;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // API URLs
+        const startCaptureUrl = "http://127.0.0.1:5000/start_capture";
+        const stopCaptureUrl = "http://127.0.0.1:5000/stop_capture";
+        const sendSuspiciousPacketUrl = "http://127.0.0.1:5000/send_suspicious_packet";
+        const getMonitoredDataUrl = "http://127.0.0.1:5000/get_monitored_data";
+        const getDetectedIntrusionsUrl = "http://127.0.0.1:5000/get_detected_intrusions";
+
+        // Start Packet Capture
+        $("#startCaptureBtn").click(function() {
+            $.ajax({
+                type: "POST",
+                url: startCaptureUrl,
+                success: function(response) {
+                    alert(response.message);
+                    if (response.status === "success") {
+                        startMonitoring();  // Start monitoring if capture is successful
+                    }
+                },
+                error: function(error) {
+                    alert("Error starting packet capture: " + error.responseJSON.message);
+                }
+            });
+        });
+
+        // Stop Packet Capture
+        $("#stopCaptureBtn").click(function() {
+            $.ajax({
+                type: "POST",
+                url: stopCaptureUrl,
+                success: function(response) {
+                    alert(response.message);
+                    if (response.status === "success") {
+                        stopMonitoring();  // Stop monitoring if capture is successful
+                    }
+                },
+                error: function(error) {
+                    alert("Error stopping packet capture: " + error.responseJSON.message);
+                }
+            });
+        });
+
+        // Send Suspicious Packet
+        $("#sendSuspiciousPacketBtn").click(function() {
+            $.ajax({
+                type: "POST",
+                url: sendSuspiciousPacketUrl,
+                data: "intrusion payload",  // Ensure the payload contains the string "intrusion"
+                success: function(response) {
+                    alert(response.message);
+                },
+                error: function(error) {
+                    alert("Error sending suspicious packet: " + error.responseJSON.message);
+                }
+            });
+        });
+
+        // Function to start monitoring
+        function startMonitoring() {
+            // Implement your monitoring logic here
+            // You can continuously poll the server for monitored data and update the UI
+            setInterval(function() {
+                updateMonitoredData();
+                updateDetectedIntrusions();  // Update detected intrusions
+            }, 5000);  // Set the interval as needed
+        }
+
+        // Function to stop monitoring
+        function stopMonitoring() {
+            // Implement any cleanup logic if needed
+            $("#monitoredData").text("");  // Clear monitored data when stopping capture
+            $("#detectedIntrusions").html("");  // Clear detected intrusions when stopping capture
+        }
+
+        // Function to update monitored data
+        function updateMonitoredData() {
+            $.ajax({
+                type: "GET",
+                url: getMonitoredDataUrl,
+                success: function(response) {
+                    // Update the UI with the received monitored data
+                    $("#monitoredData").html("");
+                    response.monitored_data.forEach(function(packet) {
+                        $("#monitoredData").append(
+                            `<p>${packet.timestamp} - ${packet.source_ip} to ${packet.destination_ip}: ${packet.payload}</p>`
+                        );
+                    });
+                },
+                error: function(error) {
+                    console.error("Error fetching monitored data: " + error.responseJSON.message);
+                }
+            });
+        }
+
+        // Function to update detected intrusions
+        function updateDetectedIntrusions() {
+            $.ajax({
+                type: "GET",
+                url: getDetectedIntrusionsUrl,
+                success: function(response) {
+                    // Update the UI with the received detected intrusions
+                    $("#detectedIntrusions").html("");
+                    response.detected_intrusions.forEach(function(intrusion) {
+                        $("#detectedIntrusions").append(
+                            `<p>Intrusion detected at ${intrusion.timestamp}: ${intrusion.payload}</p>`
+                        );
+                    });
+                },
+                error: function(error) {
+                    console.error("Error fetching detected intrusions: " + error.responseJSON.message);
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
